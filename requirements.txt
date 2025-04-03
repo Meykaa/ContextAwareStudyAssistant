@@ -1,0 +1,9 @@
+flask
+streamlit
+pypdf2
+sentence-transformers
+faiss-cpu
+mistralai
+python-docx
+dotenv
+requests
