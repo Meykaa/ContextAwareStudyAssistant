@@ -1,0 +1,10 @@
+services:
+  study_assistant:
+    build:
+      context: .
+    container_name: study_assistant
+    ports:
+      - "8501:8501"
+    restart: always
+    environment:
+      - BACKEND_URL=http://localhost:5000
