@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-BACKEND_URL = "http://127.0.0.1:5000"
+BACKEND_URL = "https://context-aware-backend.onrender.com"
 
 st.title("📖 Context-Aware Study Assistant")
 
