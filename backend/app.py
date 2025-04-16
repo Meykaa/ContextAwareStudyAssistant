@@ -8,30 +8,25 @@ from models.retrieval import retriever
 from docx import Document
 from concurrent.futures import ThreadPoolExecutor
 
-# Load API key from .env file
+# Load API key from .env or Render Environment
 load_dotenv()
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
 if not MISTRAL_API_KEY:
-    raise ValueError("❌ MISTRAL_API_KEY not found! Check your .env file.")
+    raise ValueError("❌ MISTRAL_API_KEY not found! Check your .env file or Render Environment.")
 
 app = Flask(__name__)
 
-# Define upload folder
 UPLOAD_FOLDER = "data/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 executor = ThreadPoolExecutor(max_workers=5)
-
-cache = {}  # Simple cache to store responses
-
-# Extract text from DOCX
+cache = {}  # In-memory cache for fast repeated questions
 
 def extract_text_from_docx(file_path):
+    """Extracts text from a Word (.docx) file."""
     doc = Document(file_path)
     return "\n".join([para.text for para in doc.paragraphs])
-
-# Generate answer using Mistral API
 
 def generate_answer_with_mistral(context, question, level="intermediate"):
     key = (context, question, level)
@@ -56,21 +51,19 @@ def generate_answer_with_mistral(context, question, level="intermediate"):
     }
 
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=5)
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
-        response_json = response.json()
-        answer = response_json.get("choices", [{}])[0].get("message", {}).get("content", "No answer generated.")
+        result = response.json()
+        answer = result.get("choices", [{}])[0].get("message", {}).get("content", "No answer generated.")
         cache[key] = answer
         return answer
-    except (requests.exceptions.RequestException, requests.exceptions.JSONDecodeError) as e:
+    except Exception as e:
         return f"⚠️ API Error: {str(e)}"
 
-# Home route
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Study Assistant API is running! Use /upload to upload files."})
 
-# Upload file endpoint
 @app.route("/upload", methods=["POST"])
 def upload_file():
     if "file" not in request.files:
@@ -82,17 +75,14 @@ def upload_file():
     if not (filename.endswith(".pdf") or filename.endswith(".docx")):
         return jsonify({"error": "Only PDF and Word (.docx) files are allowed."}), 400
 
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(file_path)
 
     def process_file():
         try:
-            if filename.endswith(".pdf"):
-                text = extract_text_from_pdf(file_path)
-            else:
-                text = extract_text_from_docx(file_path)
-
+            text = extract_text_from_pdf(file_path) if filename.endswith(".pdf") else extract_text_from_docx(file_path)
             text_chunks = split_text(text)
+
             if not text_chunks:
                 return jsonify({"error": "No text found in the document."}), 400
 
@@ -104,7 +94,6 @@ def upload_file():
 
     return jsonify({"message": "✅ Study material is being processed and indexed in background."}), 202
 
-# Ask question endpoint
 @app.route("/ask", methods=["POST"])
 def ask_question():
     data = request.get_json()
@@ -126,9 +115,9 @@ def ask_question():
 
     if not filtered_chunks:
         if allow_general:
-            return jsonify({"answer": "❌ Your question is not related to the uploaded study material, but here's a general explanation: " + generate_answer_with_mistral("", question, level)}), 200
-        else:
-            return jsonify({"message": "❌ Your question doesn't seem related to the uploaded study material."}), 200
+            answer = generate_answer_with_mistral("", question, level)
+            return jsonify({"answer": f"❌ Your question is not related to the uploaded material, but here’s a general answer:\n\n{answer}"}), 200
+        return jsonify({"message": "❌ Your question doesn't seem related to the uploaded study material."}), 200
 
     context = " ".join(filtered_chunks[:1]).strip()
 
@@ -137,16 +126,12 @@ def ask_question():
 
     try:
         answer = generate_answer_with_mistral(context, question, level)
+        return jsonify({"answer": answer}), 200
     except Exception as e:
         return jsonify({"error": "Failed to generate an answer.", "details": str(e)}), 500
 
-    return jsonify({"answer": answer}), 200
-
 if __name__ == "__main__":
-    print("Registered Routes:")
+    print("✅ Registered Routes:")
     for rule in app.url_map.iter_rules():
         print(rule)
-
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
-
-
