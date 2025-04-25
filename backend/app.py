@@ -21,7 +21,7 @@ UPLOAD_FOLDER = "data/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 executor = ThreadPoolExecutor(max_workers=5)
-cache = {}  # In-memory cache for fast repeated questions
+cache = {}  # In-memory cache for repeated questions
 
 def extract_text_from_docx(file_path):
     """Extracts text from a Word (.docx) file."""
@@ -84,11 +84,12 @@ def upload_file():
             text_chunks = split_text(text)
 
             if not text_chunks:
-                return jsonify({"error": "No text found in the document."}), 400
+                print("❌ No text found in the document.")
+                return
 
             retriever.build_index(text_chunks)
         except Exception as e:
-            return jsonify({"error": "Failed to process/index the file.", "details": str(e)}), 500
+            print("❌ Error while processing file:", str(e))
 
     executor.submit(process_file)
 
@@ -106,20 +107,19 @@ def ask_question():
     allow_general = data.get("allow_general", False)
 
     try:
-        relevant_chunks_with_scores = retriever.retrieve(question, return_scores=True)
+        relevant_chunks = retriever.retrieve(question)
     except Exception as e:
         return jsonify({"error": "Failed to retrieve relevant information.", "details": str(e)}), 500
 
-    threshold = 0.3
-    filtered_chunks = [text for text, score in relevant_chunks_with_scores if score >= threshold]
-
-    if not filtered_chunks:
+    if not relevant_chunks:
         if allow_general:
             answer = generate_answer_with_mistral("", question, level)
-            return jsonify({"answer": f"❌ Your question is not related to the uploaded material, but here’s a general answer:\n\n{answer}"}), 200
+            return jsonify({
+                "answer": f"❌ Your question is not related to the uploaded material, but here’s a general answer:\n\n{answer}"
+            }), 200
         return jsonify({"message": "❌ Your question doesn't seem related to the uploaded study material."}), 200
 
-    context = " ".join(filtered_chunks[:1]).strip()
+    context = " ".join(relevant_chunks[:1]).strip()
 
     if len(context) < 20:
         return jsonify({"message": "❌ The retrieved study material is too limited to provide a meaningful answer."}), 200
