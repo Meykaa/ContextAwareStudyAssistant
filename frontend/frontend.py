@@ -7,7 +7,7 @@ st.set_page_config(page_title="Context-Aware Study Assistant", page_icon="📖")
 st.title("📖 Context-Aware Study Assistant")
 
 # File upload section
-st.header("📚 Upload Study Material")
+st.header("Upload Study Material")
 uploaded_file = st.file_uploader("Choose a file", type=["pdf", "docx"])
 
 study_material_uploaded = False  # Track if a file has been uploaded
