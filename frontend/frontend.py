@@ -29,7 +29,7 @@ if uploaded_file is not None:
             st.error(f"⚠️ Backend upload failed: {e}")
 
 # Question-answering section
-st.header("🧠 Ask a Question")
+st.header("Ask a Question")
 question = st.text_input("Enter your question:")
 level = st.selectbox("Select Knowledge Level", ["Beginner", "Intermediate", "Advanced"])
 allow_general = st.checkbox("🤖 Allow General Questions (if not in study material)")
