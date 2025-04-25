@@ -111,14 +111,16 @@ def ask_question():
     except Exception as e:
         return jsonify({"error": "Failed to retrieve relevant information.", "details": str(e)}), 500
 
+    # If no relevant chunks are found and general answers are allowed, provide a general answer
     if not relevant_chunks:
         if allow_general:
-            answer = generate_answer_with_mistral("", question, level)
+            answer = generate_answer_with_mistral("", question, level)  # Empty context for general answer
             return jsonify({
                 "answer": f"❌ Your question is not related to the uploaded material, but here’s a general answer:\n\n{answer}"
             }), 200
         return jsonify({"message": "❌ Your question doesn't seem related to the uploaded study material."}), 200
 
+    # If relevant chunks are found, use those to provide the answer
     context = " ".join(relevant_chunks[:1]).strip()
 
     if len(context) < 20:
