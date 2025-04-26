@@ -3,15 +3,18 @@ import requests
 
 BACKEND_URL = "https://context-aware-backend.onrender.com"
 
+# Streamlit page config
 st.set_page_config(page_title="Context-Aware Study Assistant", page_icon="📖")
 st.title("📖 Context-Aware Study Assistant")
 
 # File upload section
-st.header("Upload Study Material")
+st.header("Upload Study Material (Optional)")
 uploaded_file = st.file_uploader("Choose a file", type=["pdf", "docx"])
 
-study_material_uploaded = False  # Track if a file has been uploaded
+# Track if study material is uploaded
+study_material_uploaded = False
 
+# Handle file upload
 if uploaded_file is not None:
     file_type = "application/pdf" if uploaded_file.name.endswith(".pdf") else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), file_type)}
@@ -32,12 +35,11 @@ if uploaded_file is not None:
 st.header("Ask a Question")
 question = st.text_input("Enter your question:")
 level = st.selectbox("Select Knowledge Level", ["Beginner", "Intermediate", "Advanced"])
-allow_general = st.checkbox("🤖 Allow General Questions (if not in study material)")
+allow_general = st.checkbox("🤖 Allow General Questions (if study material is not available)", value=True)
 
+# Handle question submission
 if st.button("Get Answer"):
-    if not uploaded_file:
-        st.warning("⚠️ Please upload study material before asking a question.")
-    elif not question.strip():
+    if not question.strip():
         st.warning("⚠️ Please enter a question before submitting.")
     else:
         payload = {
