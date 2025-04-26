@@ -35,7 +35,6 @@ if uploaded_file is not None:
 st.header("Ask a Question")
 question = st.text_input("Enter your question:")
 level = st.selectbox("Select Knowledge Level", ["Beginner", "Intermediate", "Advanced"])
-allow_general = st.checkbox("🤖 Allow General Questions (if study material is not available)", value=True)
 
 # Handle question submission
 if st.button("Get Answer"):
@@ -44,8 +43,7 @@ if st.button("Get Answer"):
     else:
         payload = {
             "question": question,
-            "level": level,
-            "allow_general": allow_general
+            "level": level
         }
 
         with st.spinner("🔍 Thinking..."):
