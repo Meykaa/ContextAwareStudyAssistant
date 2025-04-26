@@ -39,17 +39,19 @@ def generate_answer_with_mistral(context, question, level="intermediate"):
         "Content-Type": "application/json"
     }
 
-    system_prompt = "You are a helpful study assistant. Only answer if the question is based on the provided study material."
-
-    # If no study material is uploaded, we don’t include context in the message.
-    if not context.strip():  # If context is empty
-        system_prompt = "You are a helpful study assistant. Answer the question in a general way, not based on study material."
+    # Customize system prompt based on level (optional extension)
+    if level.lower() == "beginner":
+        system_prompt = "You are a beginner-friendly study assistant. Explain answers in a simple and easy-to-understand way."
+    elif level.lower() == "advanced":
+        system_prompt = "You are an advanced study assistant. Provide detailed and technical answers."
+    else:
+        system_prompt = "You are a helpful study assistant. Only answer if the question is based on the provided study material."
 
     payload = {
         "model": "mistral-tiny",
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Answer this question: {question}"}
+            {"role": "user", "content": f"Based on this study material: {context}\nAnswer this: {question}"}
         ],
         "temperature": 0.7
     }
@@ -108,23 +110,31 @@ def ask_question():
 
     question = data["question"]
     level = data.get("level", "intermediate")
-    allow_general = data.get("allow_general", False)
+    allow_general = data.get("allow_general", True)  # Make allow_general True by default
+
+    relevant_chunks = []
 
     try:
         relevant_chunks = retriever.retrieve(question)
     except Exception as e:
-        return jsonify({"error": "Failed to retrieve relevant information.", "details": str(e)}), 500
+        # Retrieval failed (likely FAISS index missing)
+        print(f"⚠️ Retrieval failed: {str(e)}")
+        if allow_general:
+            answer = generate_answer_with_mistral("", question, level)
+            return jsonify({
+                "answer": f"❌ No study material found, but here’s a general answer:\n\n{answer}"
+            }), 200
+        else:
+            return jsonify({"message": "❌ No study material found. Please upload study material first."}), 200
 
-    # If no relevant chunks are found and general answers are allowed, provide a general answer
     if not relevant_chunks:
         if allow_general:
-            answer = generate_answer_with_mistral("", question, level)  # Empty context for general answer
+            answer = generate_answer_with_mistral("", question, level)
             return jsonify({
                 "answer": f"❌ Your question is not related to the uploaded material, but here’s a general answer:\n\n{answer}"
             }), 200
         return jsonify({"message": "❌ Your question doesn't seem related to the uploaded study material."}), 200
 
-    # If relevant chunks are found, use those to provide the answer
     context = " ".join(relevant_chunks[:1]).strip()
 
     if len(context) < 20:
