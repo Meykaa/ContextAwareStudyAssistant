@@ -5,16 +5,18 @@ import faiss
 import numpy as np
 import pickle
 from sentence_transformers import SentenceTransformer
+import PyPDF2
+import docx
 
 app = Flask(__name__)
 
-# Directory setup for uploaded files and index
+# Directory setup
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 INDEX_FOLDER = "index"
 os.makedirs(INDEX_FOLDER, exist_ok=True)
 
-# Load pre-trained Sentence Transformer model
+# Load pre-trained model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # FAISS index setup
@@ -25,7 +27,7 @@ index_file = os.path.join(INDEX_FOLDER, "faiss.index")
 if os.path.exists(index_file):
     index = faiss.read_index(index_file)
 else:
-    index = faiss.IndexFlatL2(768)  # Using a flat index for simplicity
+    index = faiss.IndexFlatL2(768)  # Using 768 because MiniLM has 768 dimensions
 
 # Upload endpoint
 @app.route("/upload", methods=["POST"])
@@ -42,19 +44,20 @@ def upload_file():
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(file_path)
 
-        # Process the file and extract text
+        # Extract text from uploaded file
         text = extract_text(file_path)
-        embeddings = model.encode([text])
+        if not text.strip():
+            return jsonify({"error": "Failed to extract text from the file."}), 400
 
-        # Add embeddings to FAISS index
+        # Generate and add embeddings
+        embeddings = model.encode([text])
         embeddings = np.array(embeddings).astype("float32")
         index.add(embeddings)
 
-        # Save the FAISS index to disk
+        # Save the FAISS index
         faiss.write_index(index, index_file)
 
         return jsonify({"message": "File uploaded and indexed successfully!"}), 200
-
 
 # Ask endpoint
 @app.route("/ask", methods=["POST"])
@@ -63,38 +66,59 @@ def ask_question():
     question = data.get("question")
     level = data.get("level")
 
-    # Generate embedding for the question
-    question_embedding = model.encode([question])
+    if not question:
+        return jsonify({"error": "No question provided."}), 400
 
-    # If no study material uploaded, provide a general answer
+    # Encode the question
+    question_embedding = model.encode([question])
+    question_embedding = np.array(question_embedding).astype("float32")
+
+    # Check if any study material is uploaded
     if index.ntotal == 0:
+        # No study material available, give general answer
         return jsonify({"answer": generate_general_answer(level)})
 
-    # Search for the most similar document in the FAISS index
-    question_embedding = np.array(question_embedding).astype("float32")
+    # Search the FAISS index
     D, I = index.search(question_embedding, 1)
 
-    if D[0][0] < 0.5:  # Arbitrary threshold for similarity
-        # Get the corresponding document text (for simplicity, we'll just return the text as is)
-        document_text = "This is the closest document to your question. Here's some information..."
-        return jsonify({"answer": document_text})
-    else:
-        return jsonify({"answer": "No relevant information found. Here's a general answer."})
+    # If similarity is very low, fallback to general answer
+    if D[0][0] > 1.0:  # Higher distance means less similar
+        return jsonify({"answer": generate_general_answer(level)})
 
+    # If relevant, provide a contextual answer
+    return jsonify({"answer": "Based on your uploaded study material: Here’s some information relevant to your question."})
 
+# Extract text from uploaded file
 def extract_text(file_path):
-    # Implement your PDF or DOCX text extraction logic here
-    return "This is the extracted text from the uploaded document."
+    text = ""
+    if file_path.endswith(".pdf"):
+        try:
+            with open(file_path, "rb") as f:
+                reader = PyPDF2.PdfReader(f)
+                for page in reader.pages:
+                    text += page.extract_text() or ""
+        except Exception as e:
+            print(f"Error reading PDF: {e}")
+    elif file_path.endswith(".docx"):
+        try:
+            doc = docx.Document(file_path)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+        except Exception as e:
+            print(f"Error reading DOCX: {e}")
+    return text
 
+# General answer generator
 def generate_general_answer(level):
-    # Customize answers based on the knowledge level
     if level == "Beginner":
-        return "General information for beginners: Machine learning is a field of AI..."
+        return "General info for beginners: Deep Learning (DL) is a subset of machine learning that uses neural networks with many layers."
     elif level == "Intermediate":
-        return "Intermediate-level explanation of Machine Learning: Machine learning is a method of data analysis..."
+        return "Intermediate: Deep Learning involves training multi-layered neural networks to perform tasks such as image and speech recognition."
     elif level == "Advanced":
-        return "Advanced-level information: In machine learning, supervised learning algorithms train on labeled data..."
-    return "Here's a general answer for your question."
+        return "Advanced: Deep Learning models, including convolutional and recurrent neural networks, optimize complex patterns in high-dimensional data."
+    return "Here’s a general answer to your question."
 
+# Run the app
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
