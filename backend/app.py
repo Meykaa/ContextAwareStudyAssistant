@@ -41,11 +41,15 @@ def generate_answer_with_mistral(context, question, level="intermediate"):
 
     system_prompt = "You are a helpful study assistant. Only answer if the question is based on the provided study material."
 
+    # If no study material is uploaded, we don’t include context in the message.
+    if not context.strip():  # If context is empty
+        system_prompt = "You are a helpful study assistant. Answer the question in a general way, not based on study material."
+
     payload = {
         "model": "mistral-tiny",
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Based on this study material: {context}\nAnswer this: {question}"}
+            {"role": "user", "content": f"Answer this question: {question}"}
         ],
         "temperature": 0.7
     }
