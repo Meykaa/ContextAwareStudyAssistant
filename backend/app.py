@@ -5,8 +5,6 @@ import faiss
 import numpy as np
 import pickle
 from sentence_transformers import SentenceTransformer
-import PyPDF2
-import docx
 
 app = Flask(__name__)
 
@@ -16,18 +14,17 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 INDEX_FOLDER = "index"
 os.makedirs(INDEX_FOLDER, exist_ok=True)
 
-# Load pre-trained model
+# Load model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# FAISS index setup
+# FAISS setup
 index = None
 index_file = os.path.join(INDEX_FOLDER, "faiss.index")
 
-# Load existing index if available
 if os.path.exists(index_file):
     index = faiss.read_index(index_file)
 else:
-    index = faiss.IndexFlatL2(768)  # Using 768 because MiniLM has 768 dimensions
+    index = faiss.IndexFlatL2(768)
 
 # Upload endpoint
 @app.route("/upload", methods=["POST"])
@@ -44,17 +41,12 @@ def upload_file():
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(file_path)
 
-        # Extract text from uploaded file
         text = extract_text(file_path)
-        if not text.strip():
-            return jsonify({"error": "Failed to extract text from the file."}), 400
-
-        # Generate and add embeddings
         embeddings = model.encode([text])
+
         embeddings = np.array(embeddings).astype("float32")
         index.add(embeddings)
 
-        # Save the FAISS index
         faiss.write_index(index, index_file)
 
         return jsonify({"message": "File uploaded and indexed successfully!"}), 200
@@ -66,59 +58,33 @@ def ask_question():
     question = data.get("question")
     level = data.get("level")
 
-    if not question:
-        return jsonify({"error": "No question provided."}), 400
-
-    # Encode the question
     question_embedding = model.encode([question])
-    question_embedding = np.array(question_embedding).astype("float32")
 
-    # Check if any study material is uploaded
     if index.ntotal == 0:
-        # No study material available, give general answer
-        return jsonify({"answer": generate_general_answer(level)})
+        # No study material uploaded --> Generate natural general answer
+        return jsonify({"answer": generate_general_answer(question, level)})
 
-    # Search the FAISS index
+    question_embedding = np.array(question_embedding).astype("float32")
     D, I = index.search(question_embedding, 1)
 
-    # If similarity is very low, fallback to general answer
-    if D[0][0] > 1.0:  # Higher distance means less similar
-        return jsonify({"answer": generate_general_answer(level)})
+    if D[0][0] < 0.5:
+        return jsonify({"answer": generate_general_answer(question, level)})
+    else:
+        return jsonify({"answer": "Based on the study material, here's some information related to your question."})
 
-    # If relevant, provide a contextual answer
-    return jsonify({"answer": "Based on your uploaded study material: Here’s some information relevant to your question."})
-
-# Extract text from uploaded file
 def extract_text(file_path):
-    text = ""
-    if file_path.endswith(".pdf"):
-        try:
-            with open(file_path, "rb") as f:
-                reader = PyPDF2.PdfReader(f)
-                for page in reader.pages:
-                    text += page.extract_text() or ""
-        except Exception as e:
-            print(f"Error reading PDF: {e}")
-    elif file_path.endswith(".docx"):
-        try:
-            doc = docx.Document(file_path)
-            for para in doc.paragraphs:
-                text += para.text + "\n"
-        except Exception as e:
-            print(f"Error reading DOCX: {e}")
-    return text
+    # Dummy extractor for now
+    return "This is the extracted text from the uploaded document."
 
-# General answer generator
-def generate_general_answer(level):
+def generate_general_answer(question, level):
+    # Natural style generator
     if level == "Beginner":
-        return "General info for beginners: Deep Learning (DL) is a subset of machine learning that uses neural networks with many layers."
+        return f"{question.capitalize()} refers to fundamental concepts that are easy to understand. It usually involves basic explanations and introductory ideas."
     elif level == "Intermediate":
-        return "Intermediate: Deep Learning involves training multi-layered neural networks to perform tasks such as image and speech recognition."
+        return f"{question.capitalize()} involves a deeper understanding of the subject, connecting multiple concepts together and applying them in practical scenarios."
     elif level == "Advanced":
-        return "Advanced: Deep Learning models, including convolutional and recurrent neural networks, optimize complex patterns in high-dimensional data."
-    return "Here’s a general answer to your question."
+        return f"{question.capitalize()} explores complex theories, advanced methodologies, and real-world challenges related to the topic, often requiring specialized knowledge."
+    return "I'm here to help! Feel free to ask anything."
 
-# Run the app
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, host="0.0.0.0", port=5000)
