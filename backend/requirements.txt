@@ -3,7 +3,7 @@ streamlit
 pypdf2
 sentence-transformers
 faiss-cpu
-mistralai
 python-docx
-dotenv
+python-dotenv
 requests
+openai
