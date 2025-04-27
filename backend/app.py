@@ -1,108 +1,127 @@
-from flask import Flask, request, jsonify
 import os
-from werkzeug.utils import secure_filename
-import faiss
-import numpy as np
 import openai
-from sentence_transformers import SentenceTransformer
+from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+from PyPDF2 import PdfReader
+import docx
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize the Flask app
 app = Flask(__name__)
 
-# Directory setup
-UPLOAD_FOLDER = "uploads"
-INDEX_FOLDER = "index"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(INDEX_FOLDER, exist_ok=True)
-
-# Load lightweight Sentence Transformer model
-model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
-
-# Set up FAISS index
-index = None
-index_file = os.path.join(INDEX_FOLDER, "faiss.index")
-
-if os.path.exists(index_file):
-    index = faiss.read_index(index_file)
-else:
-    index = faiss.IndexFlatL2(384)  # 384 dimensions for this model
-
-# Set OpenAI API Key from environment variable
+# Set the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-@app.route("/upload", methods=["POST"])
-def upload_file():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part"}), 400
+# Ensure the OpenAI API key is available
+if openai.api_key is None:
+    raise ValueError("OpenAI API key not found. Please add it to the .env file.")
 
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
+# Sample route for testing if the server is running
+@app.route('/')
+def home():
+    return "Context-Aware Study Assistant is running!"
 
-    if file:
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(file_path)
-
-        # Extract text from the file
-        text = extract_text(file_path)
-        embeddings = model.encode([text])
-        embeddings = np.array(embeddings).astype("float32")
-        index.add(embeddings)
-
-        # Save the updated FAISS index
-        faiss.write_index(index, index_file)
-
-        return jsonify({"message": "File uploaded and indexed successfully!"}), 200
-
-@app.route("/ask", methods=["POST"])
+# Route to handle question-answering
+@app.route('/ask', methods=['POST'])
 def ask_question():
-    data = request.get_json()
-    question = data.get("question")
+    try:
+        # Get the input data from the request
+        data = request.get_json()
+        question = data.get("question")
+        level = data.get("level")
 
-    if not question:
-        return jsonify({"error": "No question provided"}), 400
+        if not question:
+            return jsonify({"message": "No question provided."}), 400
 
-    question_embedding = model.encode([question])
+        # Get embeddings for the question using OpenAI's API
+        question_embeddings = get_openai_embeddings(question)
 
-    if index.ntotal == 0:
-        # No study material uploaded: Use OpenAI to generate a good answer
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert study assistant."},
-                {"role": "user", "content": question},
-            ],
-            temperature=0.7,
-            max_tokens=300
-        )
-        answer = response['choices'][0]['message']['content'].strip()
+        # Logic for generating the answer (this can be based on your setup)
+        answer = generate_answer_from_embeddings(question_embeddings, level)
+
+        # Return the answer as a JSON response
         return jsonify({"answer": answer})
 
-    # Study material available: Use FAISS to search
-    question_embedding = np.array(question_embedding).astype("float32")
-    D, I = index.search(question_embedding, 1)
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
-    if D[0][0] < 0.5:
-        document_text = "This is the closest document to your question."
-        return jsonify({"answer": document_text})
+# Route for uploading study material
+@app.route('/upload', methods=['POST'])
+def upload_study_material():
+    try:
+        # Handle file upload and indexing logic
+        file = request.files.get("file")
+
+        if file is None:
+            return jsonify({"message": "No file uploaded."}), 400
+
+        # Process the file (PDF or DOCX)
+        file_content = process_file(file)
+
+        # Index the file content (you can implement indexing logic here)
+        index_file_content(file_content)
+
+        return jsonify({"message": "Study material uploaded and indexed successfully!"})
+
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+# Helper function to get OpenAI embeddings
+def get_openai_embeddings(text):
+    """Get embeddings from OpenAI's API"""
+    try:
+        response = openai.Embedding.create(
+            model="text-embedding-ada-002",  # You can use another model if needed
+            input=text
+        )
+        embeddings = response['data'][0]['embedding']
+        return embeddings
+    except Exception as e:
+        raise Exception(f"Error generating embeddings: {str(e)}")
+
+# Helper function to generate an answer (you need to implement your own logic here)
+def generate_answer_from_embeddings(embeddings, level):
+    """Generate an answer based on the embeddings and knowledge level."""
+    # This is a placeholder logic; implement your own logic to match embeddings with your knowledge base
+    if level == "Beginner":
+        return "This is a simple answer for beginners."
+    elif level == "Intermediate":
+        return "This answer is more detailed for intermediate learners."
     else:
-        # If no good match found, fallback to OpenAI
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert study assistant."},
-                {"role": "user", "content": question},
-            ],
-            temperature=0.7,
-            max_tokens=300
-        )
-        answer = response['choices'][0]['message']['content'].strip()
-        return jsonify({"answer": answer})
+        return "This is a comprehensive answer for advanced learners."
 
-def extract_text(file_path):
-    # TODO: Implement real PDF/DOCX text extraction
-    return "Extracted text from the uploaded document."
+# Helper function to process PDF and DOCX files
+def process_file(file):
+    """Process the uploaded file (PDF or DOCX)."""
+    file_extension = file.filename.split('.')[-1].lower()
+    file_content = ""
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    # Process PDF files
+    if file_extension == "pdf":
+        reader = PdfReader(file)
+        for page in reader.pages:
+            file_content += page.extract_text()
+
+    # Process DOCX files
+    elif file_extension == "docx":
+        doc = docx.Document(file)
+        for para in doc.paragraphs:
+            file_content += para.text
+
+    else:
+        raise ValueError("Unsupported file format. Only PDF and DOCX files are allowed.")
+
+    return file_content
+
+# Function to index the file content (you can implement your own indexing logic)
+def index_file_content(content):
+    """Index the content of the uploaded file (e.g., store it for search)."""
+    # For now, we'll just simulate the indexing by printing the first 500 characters
+    print("Indexing the first 500 characters of the uploaded file content:")
+    print(content[:500])  # Print the first 500 characters for preview
+
+# Run the Flask app
+if __name__ == '__main__':
+    app.run(debug=True)
