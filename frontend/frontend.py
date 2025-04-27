@@ -1,9 +1,10 @@
 import streamlit as st
 import requests
 
+# Backend URL (ensure this points to your live backend)
 BACKEND_URL = "https://context-aware-backend.onrender.com"
 
-# Streamlit page config
+# Streamlit page configuration
 st.set_page_config(page_title="Context-Aware Study Assistant", page_icon="📖")
 st.title("📖 Context-Aware Study Assistant")
 
@@ -11,7 +12,7 @@ st.title("📖 Context-Aware Study Assistant")
 st.header("Upload Study Material (Optional)")
 uploaded_file = st.file_uploader("Choose a file", type=["pdf", "docx"])
 
-# Track if study material is uploaded
+# Variable to track if the study material is uploaded successfully
 study_material_uploaded = False
 
 # Handle file upload
@@ -21,8 +22,10 @@ if uploaded_file is not None:
 
     with st.spinner("🔄 Uploading and indexing study material..."):
         try:
+            # Make POST request to backend for file upload
             response = requests.post(f"{BACKEND_URL}/upload", files=files, timeout=30)
 
+            # Check for successful upload and indexing
             if response.status_code in [200, 202]:
                 st.success("✅ Study material uploaded and indexed successfully!")
                 study_material_uploaded = True
@@ -48,9 +51,11 @@ if st.button("Get Answer"):
 
         with st.spinner("🔍 Thinking..."):
             try:
+                # Make POST request to backend to get an answer
                 response = requests.post(f"{BACKEND_URL}/ask", json=payload, timeout=60)
 
                 if response.status_code == 200:
+                    # Get the answer from the response
                     data = response.json()
                     answer = data.get("answer", data.get("message", "No answer found."))
                     st.success("✅ Here's the answer:")
