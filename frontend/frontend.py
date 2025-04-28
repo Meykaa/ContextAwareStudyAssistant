@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # Backend URL (make sure to change it to your actual backend URL when deploying)
-BACKEND_URL = "https://context-aware-backend.onrender.com"  # Update for production
+BACKEND_URL = "http://127.0.0.1:5000"  # Update for production
 
 st.title("📖 Context-Aware Study Assistant")
 
