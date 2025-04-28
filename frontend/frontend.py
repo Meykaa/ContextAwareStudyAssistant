@@ -8,7 +8,7 @@ st.title("📖 Context-Aware Study Assistant")
 
 # File upload section
 st.header("Upload Study Material")
-uploaded_file = st.file_uploader("Choose a file", type=["pdf", "docx", "txt"])
+uploaded_file = st.file_uploader("Choose a file", type=["pdf", "docx"])
 study_material_uploaded = False  # Track if a file has been uploaded
 
 if uploaded_file is not None:
