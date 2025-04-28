@@ -10,5 +10,11 @@ venv/
 .env.*
 .DS_Store
 
+# Ignore data, uploads, and other non-code files
+data/
+uploads/
+*.txt
+*.pdf
+
 # VS Code
 .vscode/
