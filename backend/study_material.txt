@@ -1,0 +1,28 @@
+Artificial Intelligence (AI) is the field of computer science that focuses on creating systems 
+capable of performing tasks that typically require human intelligence. These tasks include 
+learning from experience, recognizing patterns, solving problems, making decisions, and 
+understanding natural language. AI systems use algorithms and data to simulate human -like 
+cognitive abilities, allowing them to automate processes, enhance decision -making, and 
+improve efficiency across various industries.  
+AI is broad ly categorized into narrow AI (weak AI)  and general AI (strong AI) . Narrow AI is 
+designed to perform specific tasks, such as virtual assistants (Alexa, Siri), recommendation 
+systems (Netflix, Spotify), and fraud detection in banking. These systems are highly specialized 
+but lack the ability to generalize knowledge beyond their intended purpose. In contrast, general 
+AI refers to a theoretical form of AI that can perform any intellectual task that a human can do, 
+adapting and learning across various domai ns. While general AI remains a concept, 
+advancements in deep learning and neural networks continue to push AI closer to human -like 
+intelligence.  
+AI technologies rely on key techniques such as machine learning (ML), deep learning, natural 
+language processin g (NLP), and computer vision . Machine learning enables systems to learn 
+from data without explicit programming, while deep learning, a subset of ML, uses neural 
+networks to process complex information. NLP allows AI to understand and generate human 
+languag e, powering chatbots and translation services. Computer vision enables AI to interpret 
+images and videos, playing a crucial role in facial recognition, medical diagnostics, and 
+autonomous vehicles.  
+AI is transforming industries such as healthcare, finance,  education, and cybersecurity, 
+improving efficiency and innovation. In healthcare, AI assists in disease diagnosis and drug 
+discovery, while in finance, it detects fraudulent transactions and optimizes trading strategies. 
+However, AI also presents challeng es, including ethical concerns, job displacement, bias in AI 
+models, and security risks . As AI continues to evolve, responsible development, regulation, and 
+ethical considerations are essential to ensure its positive impact on society.  
+ 

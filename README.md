@@ -1,36 +1,30 @@
-# 📖 Context-Aware Study Assistant 
+📖Context-Aware Study Assistant
+An AI-powered assistant that answers your questions based on uploaded study material (PDF or DOCX).
+If the study material does not contain the answer, it politely informs the user.
 
-An AI-powered assistant that answers your questions **based on uploaded study material** (PDF or DOCX). If the question isn't related to the content, it can optionally give a general AI response using the Mistral LLM API.
+# Features
+Upload PDF and DOCX study material
 
----
+- Ask questions at various knowledge levels (Beginner, Intermediate, Advanced)
 
-## Features
+- Context-aware response generation using Retrieval-Augmented Generation (RAG)
 
--  Upload PDF or DOCX study material
--  Ask questions at various knowledge levels (Beginner, Intermediate, Advanced)
--  Context-aware response generation using Retrieval-Augmented Generation (RAG)
--  Optional support for general questions (via toggle)
--  Fast and responsive answers powered by Mistral API
--  Smart document indexing and retrieval with FAISS
+- Only answers based on the uploaded study material (no general AI responses)
 
----
+- Fast and responsive answers powered by Mistral API
 
-## Technologies Used
+- Smart document indexing and retrieval with FAISS
 
-- **Backend:** Flask
-- **Frontend:** Streamlit
-- **Vector Store:** FAISS
-- **LLM:** Mistral API
-- **RAG (Retrieval-Augmented Generation):** Used for context-aware question answering  
-- **PDF & DOCX Parsing:** PyMuPDF, python-docx
-- **Async File Processing:** ThreadPoolExecutor
-- **Environment Management:** python-dotenv
+# Technologies Used
+Backend: Flask
+Frontend: Streamlit
+Vector Store: FAISS
+LLM: Mistral API
+RAG (Retrieval-Augmented Generation): Used for context-aware question answering
+PDF & DOCX Parsing: PyPDF2, python-docx
+Environment Management: python-dotenv
 
----
-
-## Installation
-
-bash
+Installation
 # Clone the repository
 git clone https://github.com/your-username/context-aware-study-assistant.git
 cd context-aware-study-assistant
@@ -43,14 +37,11 @@ source venv/bin/activate   # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Environment Variables
-Create a .env file in the root directory:
+Create a .env file in the root directory and add:
 MISTRAL_API_KEY=your_mistral_api_key_here
 
-# Run the App
-Start Flask API:
-bash
+# Running the App
+1.Start Flask Backend:
 python app.py
-
-Start Streamlit Frontend:
-bash
+2.Start Streamlit Frontend:
 streamlit run frontend.py
