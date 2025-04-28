@@ -16,7 +16,7 @@ MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"  # Mistral offici
 
 # Setup
 app = Flask(__name__)
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = "uploads" 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -138,4 +138,4 @@ def ask_question():
 # --- Run Server ---
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=0)
