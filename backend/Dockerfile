@@ -21,4 +21,5 @@ COPY backend/ ./backend/
 EXPOSE 5000
 
 # Command to run the Flask app
-CMD ["python", "backend/app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "backend.app:app"]
+
