@@ -2,10 +2,12 @@ from flask import Flask, request, jsonify
 import os
 import requests
 from dotenv import load_dotenv
+
+# Custom utilities
+from utils.doc_loader import extract_text_from_docx
 from utils.pdf_loader import extract_text_from_pdf
 from utils.preprocessor import split_text
 from models.retrieval import retriever
-from docx import Document
 
 # Load API key from .env file
 load_dotenv()
@@ -19,11 +21,6 @@ app = Flask(__name__)
 # Define upload folder
 UPLOAD_FOLDER = "data/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def extract_text_from_docx(file_path):
-    """Extracts text from a Word (.docx) file."""
-    doc = Document(file_path)
-    return "\n".join([para.text for para in doc.paragraphs])
 
 def generate_answer_with_mistral(context, question, level="intermediate"):
     """Uses Mistral API to generate an answer from the retrieved context."""
@@ -101,13 +98,11 @@ def ask_question():
     question = data["question"]
     level = data.get("level", "intermediate")
 
-    # Retrieve relevant study materials
     try:
         relevant_chunks = retriever.retrieve(question)
     except Exception as e:
         return jsonify({"error": "Failed to retrieve relevant information.", "details": str(e)}), 500
 
-    # Allow answering as long as some relevant content is found
     if not relevant_chunks or len(relevant_chunks) == 0:
         return jsonify({
             "message": "❌ No relevant study material found for this question."
@@ -115,7 +110,6 @@ def ask_question():
 
     context = " ".join(relevant_chunks).strip()
 
-    # Ensure the context is not too small
     if len(context) < 20:
         return jsonify({
             "message": "❌ The retrieved study material is too limited to provide a meaningful answer."
