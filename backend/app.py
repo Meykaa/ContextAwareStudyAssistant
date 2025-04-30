@@ -4,10 +4,10 @@ import requests
 from dotenv import load_dotenv
 
 # Custom utilities
-from utils.doc_loader import extract_text_from_docx
-from utils.pdf_loader import extract_text_from_pdf
-from utils.preprocessor import split_text
-from models.retrieval import retriever
+from backend.utils.doc_loader import extract_text_from_docx
+from backend.utils.pdf_loader import extract_text_from_pdf
+from backend.utils.preprocessor import split_text
+from backend.models.retrieval import retriever
 
 # Load API key from .env file
 load_dotenv()

@@ -20,6 +20,5 @@ COPY backend/ ./backend/
 # Expose the port your Flask app will run on
 EXPOSE 5000
 
-# Command to run the Flask app
+# Command to run the Flask app using Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "backend.app:app"]
-
