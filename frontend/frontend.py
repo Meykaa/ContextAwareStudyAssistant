@@ -28,22 +28,26 @@ if uploaded_file is not None:
             st.success("✅ Study material uploaded and indexed successfully!")
             study_material_uploaded = True
         else:
-            st.error(f"❌ Failed to upload study material: {response.json()}")
+            st.error(f"🔍 Failed to upload study material: {response.json()}")  
     else:
-        st.error("❌ Unsupported file format. Please upload a PDF, DOCX, or TXT file.")
+        st.error("🔍 Unsupported file format. Please upload a PDF, DOCX, or TXT file.")  
 
 # Question-answering section
 st.header("Ask a Question")
-question = st.text_input("Enter your question:")
-level = st.selectbox("Select Knowledge Level", ["Beginner", "Intermediate", "Advanced"])
+level = st.selectbox("Select Knowledge Level", ["Beginner", "Intermediate", "Advanced"])  # ⬅️ Moved up
 
-if st.button("Get Answer"):
+# Using form to handle Enter key submit
+with st.form(key="qa_form"):
+    question = st.text_input("Enter your question:")
+    submit = st.form_submit_button("Get Answer")  # Still keeps the button
+
+if submit:
     if not study_material_uploaded:
         st.warning("⚠️ Please upload study material before asking a question.")
     elif not question.strip():
         st.warning("⚠️ Please enter a question before submitting.")
     else:
-        payload = {"question": question}  # Knowledge level will be ignored as per the backend code
+        payload = {"question": question, "level": level}  # Knowledge level will be ignored as per the backend code
         response = requests.post(f"{BACKEND_URL}/ask", json=payload)
         
         if response.status_code == 200:
@@ -51,7 +55,9 @@ if st.button("Get Answer"):
             answer = data.get("answer", "No answer found.")
             st.write("### Answer:")
             st.write(answer)
+
+            # New feature: Show suggested topics if RAG fails
+            if "suggested_topics" in data and data["suggested_topics"]:
+                st.info("Try asking about topics like: " + ", ".join(data["suggested_topics"]))
         else:
-            st.error(f"❌ Error fetching answer: {response.json()}")
-
-
+            st.error(f"🔍 Error fetching answer: {response.json()}")  # Emoji changed here

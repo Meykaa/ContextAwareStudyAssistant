@@ -1,47 +1,61 @@
-📖Context-Aware Study Assistant
-An AI-powered assistant that answers your questions based on uploaded study material (PDF or DOCX).
-If the study material does not contain the answer, it politely informs the user.
+# 📖 Context-Aware Study Assistant
 
-# Features
-Upload PDF and DOCX study material
+- An AI-powered assistant that answers your questions based on uploaded study material (PDF or DOCX).
+- If the material doesn't contain the answer, it politely informs the user or suggests related topics.
 
-- Ask questions at various knowledge levels (Beginner, Intermediate, Advanced)
+# ✨ Features
 
-- Context-aware response generation using Retrieval-Augmented Generation (RAG)
+- Upload PDF and DOCX study materials
+- Ask questions at Beginner, Intermediate, or Advanced levels
+- Context-aware answers using Retrieval-Augmented Generation (RAG)
+- Only answers from the uploaded material — no general web-based responses
+- Fast, relevant answers powered by the Mistral API
+- Smart indexing and document retrieval using FAISS
 
-- Only answers based on the uploaded study material (no general AI responses)
+# 🛠 Technologies 
 
-- Fast and responsive answers powered by Mistral API
+- Frontend: Streamlit
+- Backend: Flask
+- Vector Store: FAISS
+- LLM: Mistral API
+- RAG: Retrieval-Augmented Generation
+- PDF & DOCX Parsing: PyPDF2, python-docx
+- Environment Management: python-dotenv
+- API Communication: requests
 
-- Smart document indexing and retrieval with FAISS
+# 🚀 Installation & Running Locally
 
-# Technologies Used
-Backend: Flask
-Frontend: Streamlit
-Vector Store: FAISS
-LLM: Mistral API
-RAG (Retrieval-Augmented Generation): Used for context-aware question answering
-PDF & DOCX Parsing: PyPDF2, python-docx
-Environment Management: python-dotenv
+1. Clone the Repository
+- git clone https://github.com/your-username/context-aware-study-assistant.git
+- cd context-aware-study-assistant
 
-Installation
-# Clone the repository
-git clone https://github.com/your-username/context-aware-study-assistant.git
-cd context-aware-study-assistant
+2. Backend Setup
+- cd backend
+- python -m venv venv
+- source venv/bin/activate        # Windows: venv\Scripts\activate
+- pip install -r requirements.txt
+- Create a .env file in the backend directory and add:
+  * (MISTRAL_API_KEY=your_mistral_api_key_here)
+- Start the Flask backend: 
+  * python app.py
 
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+3. Frontend Setup
+Open a new terminal:
+- cd frontend
+- python -m venv venv
+- source venv/bin/activate        # Windows: venv\Scripts\activate
+- pip install -r requirements.txt
+- Start the Streamlit frontend:
+  * streamlit run frontend.py
 
-# Install dependencies
-pip install -r requirements.txt
+# 🌐 Deployment (Optional)
 
-# Environment Variables
-Create a .env file in the root directory and add:
-MISTRAL_API_KEY=your_mistral_api_key_here
+- Deploy backend (Flask) using Render or Docker + Gunicorn
+- Deploy frontend (Streamlit) on Streamlit Community Cloud or a separate Render service
+- Ensure the frontend uses the correct backend URL (update in code before deploying)
 
-# Running the App
-1.Start Flask Backend:
-python app.py
-2.Start Streamlit Frontend:
-streamlit run frontend.py
+# 📎 Notes
+
+- Works only with uploaded material — no general knowledge fallback
+- “Knowledge Level” selection refines answers, but doesn't affect core document search
+- Supports DOCX and PDF only (not TXT)
